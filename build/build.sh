@@ -41,6 +41,8 @@ for var in "${mandatory[@]}"; do
   fi
 done
 
+# make build 时设置 GOPROXY 环境变量不生效，只好手动添加一个
+export GOPROXY=https://goproxy.cn,direct
 export CGO_ENABLED=0
 export GOARCH=${ARCH}
 
