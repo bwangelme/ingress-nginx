@@ -33,6 +33,9 @@ LABEL build_id="${BUILD_ID}"
 
 WORKDIR  /etc/nginx
 
+ENV http_proxy 'http://10.8.0.1:8118'
+ENV https_proxy 'http://10.8.0.1:8118'
+
 RUN apk update \
   && apk upgrade \
   && apk add --no-cache \
@@ -64,7 +67,7 @@ RUN bash -xeu -c ' \
   # Put libs of newer modules under `/modules_mount/<other>/lib` and add that path below
   # Could get complicated arch specific paths become a need
   && echo "/lib:/usr/lib:/usr/local/lib:/modules_mount/etc/nginx/modules/otel" > /etc/ld-musl-x86_64.path
-  
+
 
 RUN apk add --no-cache libcap \
   && setcap    cap_net_bind_service=+ep /nginx-ingress-controller \
