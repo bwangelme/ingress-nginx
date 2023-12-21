@@ -32,8 +32,6 @@ LABEL org.opencontainers.image.revision="${COMMIT_SHA}"
 LABEL build_id="${BUILD_ID}"
 
 WORKDIR  /etc/nginx
-
-ENV http_proxy 'http://10.8.0.1:8118'
 ENV https_proxy 'http://10.8.0.1:8118'
 
 RUN apk update \
@@ -81,6 +79,8 @@ RUN apk add --no-cache libcap \
 
 USER www-data
 
+# 注意，安装完以后要将镜像中的 https_proxy 删掉，要不然 nginx 的 selftest 通不过
+ENV https_proxy ''
 # Create symlinks to redirect nginx logs to stdout and stderr docker log collector
 RUN  ln -sf /dev/stdout /var/log/nginx/access.log \
   && ln -sf /dev/stderr /var/log/nginx/error.log

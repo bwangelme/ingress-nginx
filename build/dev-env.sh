@@ -70,8 +70,8 @@ KIND_CLUSTER_NAME="ingress-nginx-dev"
 
 if ! kind get clusters -q | grep -q ${KIND_CLUSTER_NAME}; then
   echo "[dev-env] creating Kubernetes cluster with kind"
-   kind create cluster --name ${KIND_CLUSTER_NAME} --image "kindest/node:${K8S_VERSION}" --config ${DIR}/kind.yaml
-#   HTTP_PROXY='http://10.8.0.1:8118' HTTPS_PROXY='http://10.8.0.1:8118' NO_PROXY='localhost,127.0.0.1,172.16.0.0/12,10.0.0.0/8,192.168.0.0/16' kind create cluster --name ${KIND_CLUSTER_NAME} --image "kindest/node:${K8S_VERSION}" --config ${DIR}/kind.yaml
+   # kind create cluster --name ${KIND_CLUSTER_NAME} --image "kindest/node:${K8S_VERSION}" --config ${DIR}/kind.yaml
+   HTTP_PROXY='http://10.8.0.1:8118' HTTPS_PROXY='http://10.8.0.1:8118' NO_PROXY='localhost,127.0.0.1,172.16.0.0/12,10.0.0.0/8,192.168.0.0/16' kind create cluster --name ${KIND_CLUSTER_NAME} --image "kindest/node:${K8S_VERSION}" --config ${DIR}/kind.yaml
 else
   echo "[dev-env] using existing Kubernetes kind cluster"
 fi
