@@ -101,6 +101,7 @@ controller:
   terminationGracePeriodSeconds: 0
   service:
     type: NodePort
+  verboseLog: false
 EOF
 
 cat <<EOF

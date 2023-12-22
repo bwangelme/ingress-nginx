@@ -65,4 +65,7 @@
 - --{{ $key }}={{ $value }}
 {{- end }}
 {{- end }}
+{{- if .Values.controller.verboseLog  }}
+- -v10
+{{- end -}}
 {{- end -}}
