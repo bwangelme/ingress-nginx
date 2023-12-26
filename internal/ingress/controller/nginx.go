@@ -72,12 +72,14 @@ const (
 
 // NewNGINXController creates a new NGINX Ingress controller.
 func NewNGINXController(config *Configuration, mc metric.Collector) *NGINXController {
+	// eventBroadcaster 用于记录 Event 日志
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(klog.Infof)
 	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{
 		Interface: config.Client.CoreV1().Events(config.Namespace),
 	})
 
+	// 从 /etc/resolv.conf 获取 dns server 的地址
 	h, err := dns.GetSystemNameServers()
 	if err != nil {
 		klog.Warningf("Error reading system nameservers: %v", err)
@@ -94,7 +96,8 @@ func NewNGINXController(config *Configuration, mc metric.Collector) *NGINXContro
 			Component: "nginx-ingress-controller",
 		}),
 
-		stopCh:   make(chan struct{}),
+		stopCh: make(chan struct{}),
+		// informer 注册的 eventHandler 会往这个 chan 中发送事件
 		updateCh: channels.NewRingChannel(1024),
 
 		ngxErrCh: make(chan error),
@@ -124,6 +127,7 @@ func NewNGINXController(config *Configuration, mc metric.Collector) *NGINXContro
 		}
 	}
 
+	// store 是一个有各种数据缓存的存储
 	n.store = store.New(
 		config.Namespace,
 		config.WatchNamespaceSelector,
@@ -139,6 +143,7 @@ func NewNGINXController(config *Configuration, mc metric.Collector) *NGINXContro
 		config.IngressClassConfiguration,
 		config.DisableSyncEvents)
 
+	// 实例化一个 queue, 它会自动启动一个 worker, 消费传入的消息
 	n.syncQueue = task.NewTaskQueue(n.syncIngress)
 
 	if config.UpdateStatus {
@@ -155,6 +160,7 @@ func NewNGINXController(config *Configuration, mc metric.Collector) *NGINXContro
 	}
 
 	onTemplateChange := func() {
+		// 从模版文件 /etc/nginx/template/nginx.tmpl 生成 nginx 配置
 		template, err := ngx_template.NewTemplate(nginx.TemplatePath)
 		if err != nil {
 			// this error is different from the rest because it must be clear why nginx is not working
@@ -174,11 +180,14 @@ func NewNGINXController(config *Configuration, mc metric.Collector) *NGINXContro
 
 	n.t = ngxTpl
 
+	// /etc/nginx/template/nginx.tmpl
+	// 用 inotify 监听文件，当文件模版发生变化时，调用回调函数 syncIngress 同步配置
 	_, err = file.NewFileWatcher(nginx.TemplatePath, onTemplateChange)
 	if err != nil {
 		klog.Fatalf("Error creating file watcher for %v: %v", nginx.TemplatePath, err)
 	}
 
+	// /etc/nginx/geoip/ 中的所有文件也全部监听
 	filesToWatch := []string{}
 	err = filepath.Walk("/etc/nginx/geoip/", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -259,6 +268,7 @@ type NGINXController struct {
 func (n *NGINXController) Start() {
 	klog.InfoS("Starting NGINX Ingress controller")
 
+	// 启动 store, 内部会启动 informer 监听并维护各资源的本地缓存
 	n.store.Run(n.stopCh)
 
 	// we need to use the defined ingress class to allow multiple leaders
@@ -268,11 +278,13 @@ func (n *NGINXController) Start() {
 	// Should revisit this in a future
 	electionID := n.cfg.ElectionID
 
+	// 进行选举，只有主实例才可以执行状态同步更新的逻辑
 	setupLeaderElection(&leaderElectionConfig{
 		Client:     n.cfg.Client,
 		ElectionID: electionID,
 		OnStartedLeading: func(stopCh chan struct{}) {
 			if n.syncStatus != nil {
+				// 开启状态同步更新
 				go n.syncStatus.Run(stopCh)
 			}
 
@@ -309,6 +321,7 @@ func (n *NGINXController) Start() {
 
 	// In case of error the temporal configuration file will
 	// be available up to five minutes after the error
+	// 启动一个 GC 携程，清理含有前缀 nginx-cfg 的配置文件
 	go func() {
 		for {
 			time.Sleep(5 * time.Minute)
@@ -341,12 +354,14 @@ func (n *NGINXController) Start() {
 			}
 
 		case event := <-n.updateCh.Out():
+			// 从 informer 拿到事件
 			if n.isShuttingDown {
 				break
 			}
 
 			if evt, ok := event.(store.Event); ok {
 				klog.V(3).InfoS("Event received", "type", evt.Type, "object", evt.Obj)
+				// 如果是配置相关的实现，通知 syncQueue 去同步配置
 				if evt.Type == store.ConfigurationEvent {
 					// TODO: is this necessary? Consider removing this special case
 					n.syncQueue.EnqueueTask(task.GetDummyObject("configmap-change"))
