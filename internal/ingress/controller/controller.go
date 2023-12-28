@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -710,6 +711,11 @@ func (n *NGINXController) getBackendServers(ingresses []*ingress.Ingress) ([]*in
 	for _, ing := range ingresses {
 		ingKey := k8s.MetaNamespaceKey(ing)
 		anns := ing.ParsedAnnotations
+		klog.Warningf("getBackendServers: ingress %v %v\n", ing.Name, ingKey)
+		if strings.Contains(ing.Name, "apple") {
+			c, _ := json.MarshalIndent(ing.Ingress.Spec.DefaultBackend, "", "    ")
+			klog.Warningf(string(c))
+		}
 
 		if !n.store.GetBackendConfiguration().AllowSnippetAnnotations {
 			dropSnippetDirectives(anns, ingKey)

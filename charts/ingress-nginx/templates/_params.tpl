@@ -66,6 +66,6 @@
 {{- end }}
 {{- end }}
 {{- if .Values.controller.verboseLog  }}
-- -v5
+- -v3
 {{- end -}}
 {{- end -}}
