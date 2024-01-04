@@ -90,6 +90,14 @@ controller:
     digest:
   config:
     worker-processes: "1"
+  replicaCount: 3
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Equal"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Equal"
+      effect: "NoSchedule"
   podLabels:
     deploy-date: "$(date +%s)"
   updateStrategy:
