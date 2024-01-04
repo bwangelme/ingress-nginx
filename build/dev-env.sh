@@ -61,8 +61,8 @@ if [[ ${KUBE_CLIENT_VERSION} -lt 24 ]]; then
 fi
 
 echo "[dev-env] building image"
-make build image
-docker tag "${REGISTRY}/controller:${TAG}" "${DEV_IMAGE}"
+#make build image
+#docker tag "${REGISTRY}/controller:${TAG}" "${DEV_IMAGE}"
 
 export K8S_VERSION=${K8S_VERSION:-v1.26.3@sha256:61b92f38dff6ccc29969e7aa154d34e38b89443af1a2c14e6cfbd2df6419c66f}
 
@@ -106,7 +106,7 @@ EOF
 
 cat <<EOF
 
-Kubernetes cluster ready and ingress-nginx listening in localhost using ports 80 and 443
+Kubernetes cluster ready and ingress-nginx listening in localhost using ports 8080 and 8443
 
 To delete the dev cluster execute: 'kind delete cluster --name ingress-nginx-dev'
 
